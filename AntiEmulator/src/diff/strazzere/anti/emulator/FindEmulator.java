@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 
 import diff.strazzere.anti.common.Property;
+import diff.strazzere.anti.common.PropertyUtils;
 import diff.strazzere.anti.common.Utilities;
 import diff.strazzere.anti.debugger.FindDebugger;
 
@@ -53,7 +54,26 @@ public class FindEmulator {
             new Property("ro.product.device", "generic"), new Property("ro.product.model", "sdk"),
             new Property("ro.product.name", "sdk"),
             // Need to double check that an "empty" string ("") returns null
-            new Property("ro.serialno", null)};
+            new Property("ro.serialno", null),
+    };
+
+    private static Property[] known_vmospro_props = {
+            new Property("vm.camera.status", null),
+            new Property("vmos.camera.enable", null),
+            new Property("vmpro.gps", null),
+            new Property("vmpro.gsm", null),
+            new Property("vmpro.hw-control", null),
+            new Property("vmpro.sensors", null),
+            new Property("vmpro.wifi", null),
+            new Property("vmprop.androidid", null),
+            new Property("vmprop.wifissid", null),
+            new Property("vmprop.simserialnumber", null),
+            new Property("vmprop.simoperatorname", null),
+            new Property("vmprop.ip", null),
+            new Property("vmprop.imei", null),
+    };
+
+
     /**
      * The "known" props have the potential for false-positiving due to interesting (see: poorly) made Chinese
      * devices/odd ROMs. Keeping this threshold low will result in better QEmu detection with possible side affects.
@@ -62,8 +82,8 @@ public class FindEmulator {
 
     static {
         // This is only valid for arm, so gate it
-        for(String abi : Build.SUPPORTED_ABIS) {
-            if(abi.equalsIgnoreCase("armeabi-v7a")) {
+        for (String abi : Build.SUPPORTED_ABIS) {
+            if (abi.equalsIgnoreCase("armeabi-v7a")) {
                 System.loadLibrary("anti");
                 break;
             }
@@ -159,7 +179,7 @@ public class FindEmulator {
                 }
 
             }
-        } catch( SecurityException exception) {
+        } catch (SecurityException exception) {
             log("Unable to request getLine1Number, failing open :" + exception.toString());
         }
 
@@ -176,7 +196,7 @@ public class FindEmulator {
                     return true;
                 }
             }
-        } catch( SecurityException exception) {
+        } catch (SecurityException exception) {
             log("Unable to request getDeviceId, failing open :" + exception.toString());
         }
 
@@ -194,7 +214,7 @@ public class FindEmulator {
                     return true;
                 }
             }
-        } catch( SecurityException exception) {
+        } catch (SecurityException exception) {
             log("Unable to request getSubscriberId, failing open :" + exception.toString());
         }
 
@@ -255,16 +275,15 @@ public class FindEmulator {
      * Will query specific system properties to try and fingerprint a QEmu environment. A minimum threshold must be met
      * in order to prevent false positives.
      *
-     * @param context A {link Context} object for the Android application.
      * @return {@code true} if enough properties where found to exist or {@code false} if not.
      */
-    public boolean hasQEmuProps(Context context) {
+    public static boolean hasQEmuProps( ) {
         int found_props = 0;
 
         for (Property property : known_props) {
-            String property_value = Utilities.getProp(context, property.name);
+            String property_value = PropertyUtils.get(property.name,"");
             // See if we expected just a non-null
-            if ((property.seek_value == null) && (property_value != null)) {
+            if ((property.seek_value == null) && (property_value != "")) {
                 found_props++;
             }
             // See if we expected a value to seek
@@ -280,8 +299,28 @@ public class FindEmulator {
 
         return false;
     }
+    public static boolean hasVmosProps( ) {
+        int found_props = 0;
 
+        for (Property property : known_vmospro_props) {
+            String property_value = PropertyUtils.get(property.name,"");
+            // See if we expected just a non-null
+            if ((property.seek_value == null) && (property_value != "")) {
+                found_props++;
+            }
+            // See if we expected a value to seek
+            if ((property.seek_value != null) && (property_value.indexOf(property.seek_value) != -1)) {
+                found_props++;
+            }
 
+        }
+
+        if (found_props >= MIN_PROPERTIES_THRESHOLD) {
+            return true;
+        }
+
+        return false;
+    }
     public static void log(String msg) {
         Log.v("AntiEmu:FindEmulator", msg);
     }

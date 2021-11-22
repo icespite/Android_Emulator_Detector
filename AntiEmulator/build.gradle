@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 'android-29'
-    buildToolsVersion '29.0.3'
-
+    compileSdkVersion 30
+    buildToolsVersion '30.0.3'
+    ndkVersion '22.1.7171670'
 
     defaultConfig {
         applicationId "diff.strazzere.anti"
-        minSdkVersion 21
+        minSdkVersion 22
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -44,14 +44,14 @@ dependencies {
 }
 
 task ndkBuild(type: Exec, description: "Task to run ndk-build") {
-    def ndkDir = android.ndkDirectory.getAbsolutePath()
+    def ndkDir = '/run/media/icespite/Samsung_T5/Android/Sdk/ndk/22.1.7171670'
     commandLine ndkDir + "/ndk-build"
 }
 
 tasks.withType(JavaCompile) { compileTask -> compileTask.dependsOn ndkBuild }
 
 task cleanNative(type: Exec, description: "Task to run ndk-build clean") {
-    def ndkDir = android.ndkDirectory.getAbsolutePath()
+    def ndkDir = '/run/media/icespite/Samsung_T5/Android/Sdk/ndk/22.1.7171670'
     commandLine ndkDir + '/ndk-build', 'clean'
 }
 
